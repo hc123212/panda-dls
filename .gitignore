@@ -1,0 +1,7 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# 可由脚本重新生成的实验原始日志（图表与媒体保留在仓库中）
+results/*.npz
