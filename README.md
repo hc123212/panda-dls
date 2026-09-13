@@ -89,8 +89,7 @@ demo/
 ├── assets/               # README 视觉素材（hero / 数据流图）
 ├── scripts/              # run_verify / run_ik_test / run_track / run_experiments
 ├── tests/                # pytest：对准测试、四元数性质、DLS 收敛
-├── results/              # 实验图表、demo.gif / demo.mp4、npz 日志
-└── docs/                 # 讲解文档
+└── results/              # 实验图表、demo.gif / demo.mp4、npz 日志
 ```
 
 ## 实验
