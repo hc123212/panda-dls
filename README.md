@@ -9,7 +9,7 @@
 ![Python](https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white)
 ![MuJoCo](https://img.shields.io/badge/MuJoCo-3.11-orange)
 ![核心依赖](https://img.shields.io/badge/核心数学-纯%20NumPy-informational)
-![Tests](https://img.shields.io/badge/pytest-6%2F%206%20passed-brightgreen)
+![Tests](https://img.shields.io/badge/pytest-6%2F6%20passed-brightgreen)
 ![平台](https://img.shields.io/badge/平台-Windows-0078D6?logo=windows)
 
 ![demo](results/demo.gif)
@@ -48,9 +48,9 @@
 | 静态 IK 收敛率（随机可达位姿，两阶段 + 多起点） | $96\%$（48/50） |
 | 空间圆跟踪 · 运动学层（1 圈 13 s，1 kHz） | 位置 RMS $0.04$ mm，姿态 max $0.01^\circ$ |
 | 空间圆跟踪 · 动力学层（PD 位置舵机） | 位置 RMS $4.2$ mm，姿态 max $1.28^\circ$ |
-| 奇异实验（伸向工作空间边界，$\sigma_{\min}\to 0$） | 伪逆关节速度需求 $889$ rad/s vs 自适应 DLS $1.1$ rad/s |
+| 奇异实验 · 伸向工作空间边界直至 $\sigma_{\min} \to 0$ | 伪逆关节速度需求 $889$ rad/s vs 自适应 DLS $1.1$ rad/s |
 | 零空间可操作度最大化 | 边界处可操作度保持 $3.5\times$，主任务误差几乎重合 |
-| 零空间限位救援（$q_7$ 贴限位起始） | 关：撞限位 + 姿态误差 $6.58^\circ$；开：不贴限 + $0.01^\circ$ |
+| 零空间限位救援（起始 $q_7$ 贴近限位） | 关：撞限位 + 姿态误差 $6.58^\circ$；开：不贴限 + $0.01^\circ$ |
 | 轨迹前馈 开 / 关 | 位置 RMS $0.04$ mm vs $46.2$ mm |
 
 ## 安装
@@ -82,9 +82,9 @@ python scripts/run_experiments.py   # 四组对比实验 + 自动出图
 
 $$\Delta q \;=\; \underbrace{J^T\big(JJ^T+\lambda^2 I_6\big)^{-1}\big(K\,e+\dot{x}_d\big)}_{\text{主任务：DLS 分辨率速度控制}} \;+\; \underbrace{\big(I_7-J^T\big(JJ^T+\lambda^2 I_6\big)^{-1}J\big)\,k_n\,z(q)}_{\text{零空间次任务}}$$
 
-- **误差** $e=[\,p_d-p,\;\log(R_d R^T)^\vee\,]$：姿态走 so(3) 对数映射（短弧、无双覆盖），与雅可比角速度行同处世界系；
-- **自适应阻尼**：$\lambda^2=\lambda_0^2\big(1-(\sigma_{\min}/\varepsilon)^2\big)$（$\sigma_{\min}\ge\varepsilon$ 时取 0）——SVD 视角下每个奇异方向的增益由 $1/\sigma$ 压为 $\sigma/(\sigma^2+\lambda^2)$；
-- **零空间**：$N(q)=I_7-J^+J$ 把次任务 $z(q)$（限位中值吸引 / 可操作度梯度）投影到不影响主任务的方向。
+- 误差 $e = [\,p_d - p,\; \log(R_d R^T)^\vee\,]$：姿态走 so(3) 对数映射（短弧、无双覆盖），与雅可比角速度行同处世界系；
+- 自适应阻尼 $\lambda^2=\lambda_0^2\big(1-(\sigma_{\min}/\varepsilon)^2\big)$，当 $\sigma_{\min} \ge \varepsilon$ 时取 0：SVD 视角下每个奇异方向的增益由 $1/\sigma$ 压为 $\sigma/(\sigma^2+\lambda^2)$；
+- 零空间投影 $N(q) = I_7 - J^+ J$ 把次任务 $z(q)$（限位中值吸引 / 可操作度梯度）限制在不影响主任务的方向。
 
 更完整的推导、逐模块实现细节与全部工程坑位见 [docs/讲解文档.md](docs/讲解文档.md)。
 
@@ -110,10 +110,10 @@ demo/
 
 | 图表 | 看什么 | 结论 |
 |---|---|---|
-| `results/singularity.png` | $\|\Delta q\|_\infty$（对数轴）与 $\sigma_{\min}$，$t\approx 6$ s 处到达边界 | 伪逆需求飙至 $889$ rad/s；固定阻尼平滑但滞后 $48$ mm；自适应阻尼 $1.1$ rad/s 且滞后最小 |
+| `results/singularity.png` | $\lVert \Delta q \rVert_\infty$（对数轴）与 $\sigma_{\min}$ 曲线，在 $t \approx 6$ s 处到达工作空间边界 | 伪逆需求飙至 $889$ rad/s；固定阻尼平滑但滞后 $48$ mm；自适应阻尼 $1.1$ rad/s 且滞后最小 |
 | `results/nullspace_manip.png` | 可操作度 $m(q)$ 与主任务误差 | 梯度项把边界处 $m$ 抬高 $3.5\times$，主任务不受损 |
 | `results/nullspace_limit.png` | $q_5$ / $q_7$ 关节姿态与限位裕度 | 零空间提前把 $q_7$ 拉离限位，姿态误差 $6.58^\circ\to 0.01^\circ$ |
-| `results/feedforward.png` | 前馈开/关的误差曲线 | 纯反馈滞后 $\propto$ 速度：$46$ mm $\to$ $0.04$ mm |
+| `results/feedforward.png` | 前馈开/关的误差曲线 | 纯反馈滞后 $\propto$ 速度，误差从 $46$ mm 降到 $0.04$ mm |
 | `results/stage_ab.png` | 运动学层 vs 动力学层 | $0.04$ vs $4.2$ mm：算法误差与执行误差的分解 |
 | `results/track_dyn.png` | 误差双轴曲线 | 误差峰与五次多项式速度包络同步，物理自洽 |
 
