@@ -1,4 +1,4 @@
-"""静态 IK 收敛测试（M3 验收）: 随机可达位姿统计收敛率与迭代次数。
+"""静态 IK 收敛测试: 随机可达位姿统计收敛率与迭代次数。
 
 用法:
     D:/pyenvs/robotics/Scripts/python.exe scripts/run_ik_test.py

@@ -1,4 +1,4 @@
-"""pytest 套件: FK/雅可比对拍、四元数工具、DLS 静态收敛。
+"""pytest 套件: FK/雅可比与 MuJoCo 比对、四元数工具、DLS 静态收敛。
 
 运行: cd demo && D:/pyenvs/robotics/Scripts/python.exe -m pytest tests/ -v
 """

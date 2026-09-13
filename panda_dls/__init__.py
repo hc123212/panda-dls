@@ -1,4 +1,4 @@
-"""panda_dls: Panda 机械臂 MDH 运动学 + DLS 笛卡尔空间轨迹跟踪（教学实现）。
+"""panda_dls: Panda 机械臂 MDH 运动学 + DLS 笛卡尔空间轨迹跟踪。
 
 模块:
     kinematics  MDH 参数表、正向运动学 FK、几何雅可比      (纯 NumPy 手写)

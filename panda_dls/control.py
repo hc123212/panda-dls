@@ -1,7 +1,7 @@
 """MuJoCo 仿真闭环：运动学层 / 动力学层两种模式。
 
 运动学层 (mode="kinematic"):
-    q <- q + dq*dt 直接积分写 qpos, 无动力学干扰 —— 专门验证控制律与轨迹
+    q <- q + dq*dt 直接积分写 qpos, 无动力学干扰 —— 专门确认控制律与轨迹
     本身的正确性, 误差应收敛到数值精度级。
 
 动力学层 (mode="dynamic"):
@@ -10,7 +10,7 @@
     由执行器带宽与重力决定 —— 与运动学层的差值即 "执行/动力学误差"。
 
 两模式控制频率均为 1 kHz (Panda 真机控制频率口径)。位姿与雅可比统一用
-自研 MDH 运动学计算（已与 MuJoCo 对拍 <1e-9）, 避免每步调用 mj_forward。
+自研 MDH 运动学计算（已与 MuJoCo 比对 <1e-9）, 避免每步调用 mj_forward。
 """
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ from .dls import DLSConfig, dls_step, task_velocity
 _HERE = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(_HERE, "..", "models", "franka_emika_panda", "scene.xml")
 
-#: 演示起始位形（Franka 风格 "ready" 姿态附近的肘抬起位形, 限位裕度充足）
+#: 起始位形（Franka 风格 "ready" 姿态附近的肘抬起位形, 限位裕度充足）
 DEMO_Q0 = np.array([0.0, -0.30, 0.0, -2.20, 0.0, 2.00, 0.785])
 
 Q_LO = kin.JOINT_LIMITS[:, 0]
@@ -149,4 +149,4 @@ def run_with_viewer(traj, cfg: DLSConfig, q0: np.ndarray = DEMO_Q0, model_path: 
             mujoco.mj_step(sim.model, sim.data)
             if k % 10 == 0:
                 v.sync()
-    print("viewer 演示结束")
+    print("viewer 运行结束")

@@ -55,7 +55,7 @@ def main():
     ap.add_argument("--kin", action="store_true", help="运动学层(默认动力学层)")
     ap.add_argument("--laps", type=float, default=2.0)
     ap.add_argument("--dur", type=float, default=26.0)
-    ap.add_argument("--view", action="store_true", help="实时 viewer 演示(不落盘)")
+    ap.add_argument("--view", action="store_true", help="实时 viewer 查看(不落盘)")
     ap.add_argument("--gif", action="store_true", default=True)
     args = ap.parse_args()
 

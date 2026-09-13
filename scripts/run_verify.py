@@ -1,4 +1,4 @@
-"""一键自检（M1/M2 验收）: MDH 标定数据打印 + FK/雅可比对拍。
+"""一键自检: MDH 标定数据打印 + FK/雅可比/四元数校验。
 
 用法:
     D:/pyenvs/robotics/Scripts/python.exe scripts/run_verify.py
@@ -53,8 +53,8 @@ def main():
         print(f"  {j + 1:>2}   [{p[0]:7.4f}, {p[1]:7.4f}, {p[2]:7.4f}]      "
               f"[{axis[0]:6.3f}, {axis[1]:6.3f}, {axis[2]:6.3f}]")
 
-    # ---- 2) FK 对拍 ----
-    print("== 2) MDH-FK 对拍 mj_kinematics (随机 500 组 q) ==")
+    # ---- 2) FK 比对 ----
+    print("== 2) MDH-FK 比对 mj_kinematics (随机 500 组 q) ==")
     rng = np.random.default_rng(0)
     q_test = rng.uniform(kin.JOINT_LIMITS[:, 0], kin.JOINT_LIMITS[:, 1], size=(500, 7))
     e7p = e7R = ehp = ehR = 0.0
@@ -74,8 +74,8 @@ def main():
     check("FK hand  位置误差 [m]", ehp, 1e-9)
     check("FK hand  旋转误差 [-]", ehR, 1e-9)
 
-    # ---- 3) 雅可比对拍 ----
-    print("== 3) 几何雅可比对拍 mj_jac (100 组) ==")
+    # ---- 3) 雅可比比对 ----
+    print("== 3) 几何雅可比与 mj_jac 比对 (100 组) ==")
     eJ = 0.0
     for q in q_test[:100]:
         data.qpos[:7] = q
@@ -105,7 +105,7 @@ def main():
     check("差分-解析雅可比误差 (h=1e-6)", efd, 1e-6)
 
     # ---- 5) 四元数/旋转互转 vs MuJoCo ----
-    print("== 5) 四元数工具对拍 mju_mat2Quat (100 组) ==")
+    print("== 5) 四元数工具比对 mju_mat2Quat (100 组) ==")
     eq = 0.0
     for q in q_test[:100]:
         data.qpos[:7] = q
