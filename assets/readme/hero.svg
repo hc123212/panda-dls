@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="360" viewBox="0 0 1200 360" role="img" aria-labelledby="hT hD">
+  <title id="hT">panda-dls</title>
+  <desc id="hD">基于 MuJoCo 与阻尼最小二乘的 Panda 机械臂笛卡尔空间轨迹跟踪与姿态控制。左侧为项目名、方法说明与关键实测指标，右侧为机械臂沿空间圆虚线轨迹跟踪的线稿示意。</desc>
+
+  <rect width="1200" height="360" rx="22" fill="#0B1118"/>
+
+  <!-- MuJoCo 场景地面：棋盘格透视条 -->
+  <g id="floor" opacity="0.9">
+    <path d="M660 330 L1200 330 L1200 312 L672 312 Z" fill="#101923"/>
+    <path d="M700 312 L780 312 L770 330 L694 330 Z" fill="#141F2B"/>
+    <path d="M790 312 L870 312 L862 330 L786 330 Z" fill="#101923"/>
+    <path d="M880 312 L960 312 L954 330 L878 330 Z" fill="#141F2B"/>
+    <path d="M970 312 L1050 312 L1046 330 L970 330 Z" fill="#101923"/>
+    <path d="M1060 312 L1140 312 L1138 330 L1062 330 Z" fill="#141F2B"/>
+    <line x1="660" y1="312" x2="1200" y2="312" stroke="#1C2936" stroke-width="1.5"/>
+  </g>
+
+  <!-- 期望轨迹：空间圆（透视椭圆）+ 目标点 -->
+  <g id="trajectory">
+    <ellipse cx="968" cy="208" rx="100" ry="34" fill="none" stroke="#58A6FF" stroke-width="2.5" stroke-dasharray="7 6"/>
+    <path d="M968 204 L968 212 M964 208 L972 208" stroke="#FFA657" stroke-width="2"/>
+    <text x="968" y="196" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="17" fill="#FFA657">p_d, R_d</text>
+    <text x="968" y="264" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="18" fill="#8FA1B3">空间圆轨迹 + 姿态摆动</text>
+  </g>
+
+  <!-- 机械臂连杆线稿：基座 -> 肩 -> 肘 -> 腕 -> 手端落在轨迹上 -->
+  <g id="arm" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="874" y1="222" x2="874" y2="298" stroke="#1C2936" stroke-width="1.5" stroke-dasharray="4 5"/>
+    <polyline points="700,298 742,220 780,172 818,158 852,190 874,222" stroke="#E8EEF4" stroke-width="7" fill="none"/>
+    <!-- 关节 -->
+    <circle cx="700" cy="298" r="8" fill="#0B1118" stroke="#8FA1B3" stroke-width="2.5"/>
+    <circle cx="742" cy="220" r="8" fill="#0B1118" stroke="#8FA1B3" stroke-width="2.5"/>
+    <circle cx="780" cy="172" r="8" fill="#0B1118" stroke="#8FA1B3" stroke-width="2.5"/>
+    <circle cx="818" cy="158" r="8" fill="#0B1118" stroke="#8FA1B3" stroke-width="2.5"/>
+    <circle cx="852" cy="190" r="8" fill="#0B1118" stroke="#8FA1B3" stroke-width="2.5"/>
+    <!-- 关节轴十字（母题） -->
+    <g stroke="#58A6FF" stroke-width="1.8" opacity="0.85">
+      <path d="M780 160 L780 184 M768 172 L792 172"/>
+      <path d="M852 178 L852 202 M840 190 L864 190"/>
+    </g>
+    <!-- 手端：落在轨迹上 -->
+    <circle cx="874" cy="222" r="9" fill="#0B1118" stroke="#FFA657" stroke-width="3"/>
+    <path d="M883 218 L896 213 M883 226 L896 231" stroke="#FFA657" stroke-width="3.5"/>
+  </g>
+
+  <!-- 左侧标题区 -->
+  <g id="title-block" transform="translate(56 62)" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif">
+    <text y="0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="18" letter-spacing="3" fill="#8FA1B3">MUJOCO · FRANKA PANDA · 7 DOF</text>
+    <text y="66" font-size="68" font-weight="700" fill="#E8EEF4">panda<tspan fill="#58A6FF">-dls</tspan></text>
+    <text y="108" font-size="24" fill="#C9D6E2">基于阻尼最小二乘的笛卡尔空间轨迹跟踪与姿态控制</text>
+    <text y="140" font-size="21" fill="#8FA1B3">手写 MDH 运动学 · 自适应阻尼 · 零空间冗余优化</text>
+    <line x1="0" y1="166" x2="560" y2="166" stroke="#1C2936" stroke-width="1.5"/>
+    <!-- 实测指标 -->
+    <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="19">
+      <text y="202" fill="#8FA1B3">FK 比对误差</text>
+      <text x="230" y="202" fill="#E8EEF4">~1e-15</text>
+      <text y="238" fill="#8FA1B3">跟踪误差 RMS</text>
+      <text x="230" y="238" fill="#E8EEF4">0.04 mm（运动学层）</text>
+      <text y="274" fill="#8FA1B3">奇异处关节速度需求</text>
+      <text x="230" y="274" fill="#E8EEF4">889 -&gt; 1.1 rad/s</text>
+    </g>
+  </g>
+</svg>

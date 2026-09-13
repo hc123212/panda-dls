@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="240" viewBox="0 0 1200 240" role="img" aria-labelledby="pT pD">
+  <title id="pT">panda-dls 控制回路数据流</title>
+  <desc id="pD">控制回路数据流：轨迹发生器给出期望位姿，MDH 运动学计算 FK 与雅可比，得到 6D 任务误差后由 DLS 控制律映射为关节速度，交给 MuJoCo 以 1 kHz 闭环执行，关节实测反馈回运动学。</desc>
+
+  <rect width="1200" height="240" rx="20" fill="#0B1118"/>
+
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#8FA1B3"/>
+    </marker>
+    <marker id="arrWarm" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#FFA657"/>
+    </marker>
+  </defs>
+
+  <!-- 模块盒 -->
+  <g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif">
+    <!-- 1 轨迹发生器 -->
+    <g>
+      <rect x="40" y="52" width="190" height="122" rx="12" fill="#101A24" stroke="#2A3A4A" stroke-width="1.5"/>
+      <text x="135" y="86" text-anchor="middle" font-size="21" font-weight="600" fill="#E8EEF4">轨迹发生器</text>
+      <text x="135" y="114" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="17" fill="#8FA1B3">p_d, R_d, ẋ_d</text>
+      <text x="135" y="138" text-anchor="middle" font-size="17" fill="#8FA1B3">五次律 · slerp</text>
+      <text x="135" y="161" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="17" fill="#58A6FF">traj.py</text>
+    </g>
+    <!-- 2 MDH 运动学 -->
+    <g>
+      <rect x="256" y="52" width="205" height="122" rx="12" fill="#101A24" stroke="#2A3A4A" stroke-width="1.5"/>
+      <text x="358" y="86" text-anchor="middle" font-size="21" font-weight="600" fill="#E8EEF4">MDH 运动学</text>
+      <text x="358" y="114" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="17" fill="#8FA1B3">FK · 雅可比 J</text>
+      <text x="358" y="138" text-anchor="middle" font-size="17" fill="#8FA1B3">手写 · 机器精度比对</text>
+      <text x="358" y="161" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="17" fill="#58A6FF">kinematics.py</text>
+    </g>
+    <!-- 3 6D 误差 -->
+    <g>
+      <rect x="486" y="52" width="175" height="122" rx="12" fill="#101A24" stroke="#2A3A4A" stroke-width="1.5"/>
+      <text x="573" y="86" text-anchor="middle" font-size="21" font-weight="600" fill="#E8EEF4">6D 任务误差</text>
+      <text x="573" y="114" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="17" fill="#8FA1B3">e_p + e_o 轴角</text>
+      <text x="573" y="138" text-anchor="middle" font-size="17" fill="#8FA1B3">评估: chordal</text>
+      <text x="573" y="161" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="17" fill="#58A6FF">quaternion.py</text>
+    </g>
+    <!-- 4 DLS 控制律（高亮） -->
+    <g>
+      <rect x="687" y="52" width="265" height="122" rx="12" fill="#12202E" stroke="#58A6FF" stroke-width="1.5"/>
+      <text x="819" y="86" text-anchor="middle" font-size="21" font-weight="600" fill="#E8EEF4">DLS 控制律</text>
+      <text x="819" y="114" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="17" fill="#C9D6E2">Jᵀ(JJᵀ+λ²I)⁻¹(Ke+ẋ_d)</text>
+      <text x="819" y="138" text-anchor="middle" font-size="17" fill="#8FA1B3">+ 零空间投影 N(q)z(q)</text>
+      <text x="819" y="161" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="17" fill="#58A6FF">dls.py</text>
+    </g>
+    <!-- 5 MuJoCo 闭环 -->
+    <g>
+      <rect x="977" y="52" width="180" height="122" rx="12" fill="#101A24" stroke="#2A3A4A" stroke-width="1.5"/>
+      <text x="1067" y="86" text-anchor="middle" font-size="21" font-weight="600" fill="#E8EEF4">MuJoCo 闭环</text>
+      <text x="1067" y="114" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="17" fill="#8FA1B3">Δq → 关节舵机</text>
+      <text x="1067" y="138" text-anchor="middle" font-size="17" fill="#8FA1B3">运动学层/动力学层</text>
+      <text x="1067" y="161" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="17" fill="#58A6FF">control.py</text>
+    </g>
+  </g>
+
+  <!-- 正向箭头 -->
+  <g stroke="#8FA1B3" stroke-width="2" fill="none">
+    <line x1="232" y1="113" x2="250" y2="113" marker-end="url(#arr)"/>
+    <line x1="463" y1="113" x2="480" y2="113" marker-end="url(#arr)"/>
+    <line x1="663" y1="113" x2="681" y2="113" marker-end="url(#arr)"/>
+    <line x1="954" y1="113" x2="971" y2="113" marker-end="url(#arr)"/>
+  </g>
+
+  <!-- 1 kHz 实测反馈回路 -->
+  <g stroke="#FFA657" stroke-width="2" fill="none" stroke-dasharray="7 6" opacity="0.9">
+    <path d="M1067 174 L1067 206 L358 206 L358 182" marker-end="url(#arrWarm)"/>
+  </g>
+  <text x="712" y="227" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="18" fill="#FFA657">q 实测反馈 · 1 kHz</text>
+</svg>
