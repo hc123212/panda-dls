@@ -80,10 +80,10 @@ python scripts/run_experiments.py   # 四组对比实验 + 自动出图
 
 30 秒版本：参考轨迹给出期望位姿与前馈速度，手写 MDH 运动学算出当前位姿与雅可比，DLS 把 6D 误差映射为关节速度，MuJoCo 负责积分与渲染。
 
-$$\Delta q \;=\; \underbrace{J^T\big(JJ^T+\lambda^2 I_6\big)^{-1}\big(K\,e+\dot{x}_d\big)}_{\text{主任务：DLS 分辨率速度控制}} \;+\; \underbrace{\big(I_7-J^T\big(JJ^T+\lambda^2 I_6\big)^{-1}J\big)\,k_n\,z(q)}_{\text{零空间次任务}}$$
+$$\Delta q  =  \underbrace{J^T(JJ^T+\lambda^2 I_6)^{-1}(K e+\dot{x}_d)}_{\text{主任务：DLS 分辨率速度控制}}  +  \underbrace{(I_7-J^T(JJ^T+\lambda^2 I_6)^{-1}J) k_n z(q)}_{\text{零空间次任务}}$$
 
-- 误差 $e = [\,p_d - p,\; \log(R_d R^T)^\vee\,]$：姿态走 so(3) 对数映射（短弧、无双覆盖），与雅可比角速度行同处世界系；
-- 自适应阻尼 $\lambda^2=\lambda_0^2\big(1-(\sigma_{\min}/\varepsilon)^2\big)$，当 $\sigma_{\min} \ge \varepsilon$ 时取 0：SVD 视角下每个奇异方向的增益由 $1/\sigma$ 压为 $\sigma/(\sigma^2+\lambda^2)$；
+- 误差 $e = [ p_d - p,  \log(R_d R^T)^\vee ]$：姿态走 so(3) 对数映射（短弧、无双覆盖），与雅可比角速度行同处世界系；
+- 自适应阻尼 $\lambda^2=\lambda_0^2(1-(\sigma_{\min}/\varepsilon)^2)$，当 $\sigma_{\min} \ge \varepsilon$ 时取 0：SVD 视角下每个奇异方向的增益由 $1/\sigma$ 压为 $\sigma/(\sigma^2+\lambda^2)$；
 - 零空间投影 $N(q) = I_7 - J^+ J$ 把次任务 $z(q)$（限位中值吸引 / 可操作度梯度）限制在不影响主任务的方向。
 
 更完整的推导、逐模块实现细节与全部工程坑位见 [docs/讲解文档.md](docs/讲解文档.md)。
