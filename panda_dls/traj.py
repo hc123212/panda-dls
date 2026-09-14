@@ -1,7 +1,10 @@
 """笛卡尔空间参考轨迹：五次多项式时间律 + 直线 / 空间圆 + 同步姿态旋转。
 
-统一接口 sample(t) -> (p, R, v, w):
-    p, R    期望位姿;  v, w 期望线/角速度, 用作 DLS 的前馈项。
+统一接口 sample(t) -> (p, R, v, w, a, alpha):
+    p, R    期望位姿;  v, w 期望线/角速度, 用作一阶(速度级)控制器的前馈;
+    a, alpha 期望线/角加速度, 用作二阶(动力学级)控制器的前馈。
+    注意 a/alpha 定义为 (v, w) 的世界系时间导数 —— 与几何雅可比的
+    ẍ = J q̈ + J̇ q̇ 关系严格一致 (osc.py 依赖这一点)。
 
 时间律用归一化五次多项式 s(τ) = 10τ³ - 15τ⁴ + 6τ⁵: 两端速度、加速度同时
 为零, 比梯形律更平滑; 姿态"旋转角"同样用它驱动, 于是角速度在两端自然
@@ -48,16 +51,24 @@ class CircleTraj:
         self.duration = float(duration)
 
     def sample(self, t: float):
-        s, sd, _ = quintic(t, self.duration)
+        s, sd, sdd = quintic(t, self.duration)
         phi = self.phi0 + self.Phi * s
         phid = self.Phi * sd
+        phidd = self.Phi * sdd
         th = self.A * np.sin(np.pi * s)
         thd = self.A * np.pi * np.cos(np.pi * s) * sd
-        p = self.c + self.r * np.array([np.cos(phi), np.sin(phi), 0.0])
+        thdd = self.A * np.pi * (np.cos(np.pi * s) * sdd
+                                 - np.pi * np.sin(np.pi * s) * sd * sd)
+        cp, sp = np.cos(phi), np.sin(phi)
+        p = self.c + self.r * np.array([cp, sp, 0.0])
         R = _rz(th) @ self.R0
-        v = self.r * phid * np.array([-np.sin(phi), np.cos(phi), 0.0])
+        v = self.r * phid * np.array([-sp, cp, 0.0])
         w = thd * np.array([0.0, 0.0, 1.0])
-        return p, R, v, w
+        # a = d/dt v: 切向(phidd) + 向心(phid^2) 两项
+        a = self.r * (phidd * np.array([-sp, cp, 0.0])
+                      + phid * phid * np.array([-cp, -sp, 0.0]))
+        alpha = thdd * np.array([0.0, 0.0, 1.0])
+        return p, R, v, w, a, alpha
 
 
 class LineTraj:
@@ -70,7 +81,8 @@ class LineTraj:
         self.duration = float(duration)
 
     def sample(self, t: float):
-        s, sd, _ = quintic(t, self.duration)
+        s, sd, sdd = quintic(t, self.duration)
         p = self.p0 + s * self.dp
         v = sd * self.dp
-        return p, self.R0, v, np.zeros(3)
+        a = sdd * self.dp
+        return p, self.R0, v, np.zeros(3), a, np.zeros(3)

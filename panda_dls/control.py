@@ -21,6 +21,7 @@ import mujoco
 
 from . import kinematics as kin
 from .dls import DLSConfig, dls_step, task_velocity
+from .qp import QPConfig, QPController
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(_HERE, "..", "models", "franka_emika_panda", "scene.xml")
@@ -79,14 +80,17 @@ def _log_step(log, t, q, q_des, p, p_d, e, info):
     log["scale"].append(info["scale"])
 
 
-def run_tracking(traj, cfg: DLSConfig, mode: str = "dynamic", q0: np.ndarray = DEMO_Q0,
+def run_tracking(traj, cfg: DLSConfig | QPConfig, mode: str = "dynamic", q0: np.ndarray = DEMO_Q0,
                  dt: float | None = None, model_path: str = MODEL_PATH) -> dict:
-    """沿轨迹做 DLS 闭环跟踪, 返回逐周期指标日志（dict of np.ndarray）。
+    """沿轨迹做闭环跟踪, 返回逐周期指标日志（dict of np.ndarray）。
 
+    cfg 传 DLSConfig 用解析 DLS, 传 QPConfig 用 OSQP 约束求解
+    (速度级控制律同构: xd = K·e + 前馈 → dq)。
     dt: 运动学层默认 0.002; 动力学层强制 = 模型步长 (0.001, Panda 真机口径)。
     """
-    sim = PandaSim(model_path)
     dt = dt or (0.001 if mode == "dynamic" else 0.002)
+    qp = QPController(cfg, dt) if isinstance(cfg, QPConfig) else None
+    sim = PandaSim(model_path)
     n_steps = int(np.ceil(traj.duration / dt))
 
     q = np.clip(np.asarray(q0, float), Q_LO, Q_HI)
@@ -97,7 +101,7 @@ def run_tracking(traj, cfg: DLSConfig, mode: str = "dynamic", q0: np.ndarray = D
 
     for k in range(n_steps):
         t = k * dt
-        p_d, R_d, v_ff, w_ff = traj.sample(t)
+        p_d, R_d, v_ff, w_ff, *_ = traj.sample(t)
 
         if mode == "kinematic":
             Th = kin.fk_hand(q)
@@ -110,7 +114,10 @@ def run_tracking(traj, cfg: DLSConfig, mode: str = "dynamic", q0: np.ndarray = D
             J = kin.hand_jacobian(q)
 
         xd, e = task_velocity(p, R, p_d, R_d, v_ff, w_ff, cfg)
-        dq, info = dls_step(q, xd, J, cfg)
+        if qp is not None:
+            dq, info = qp.step(q, p, J, xd)
+        else:
+            dq, info = dls_step(q, xd, J, cfg)
 
         if mode == "kinematic":
             q = np.clip(q + dq * dt, Q_LO, Q_HI)
@@ -138,7 +145,7 @@ def run_with_viewer(traj, cfg: DLSConfig, q0: np.ndarray = DEMO_Q0, model_path: 
     with mujoco.viewer.launch_passive(sim.model, sim.data) as v:
         for k in range(int(np.ceil(traj.duration / 0.001))):
             t = k * 0.001
-            p_d, R_d, v_ff, w_ff = traj.sample(t)
+            p_d, R_d, v_ff, w_ff, *_ = traj.sample(t)
             q = sim.data.qpos[:7].copy()
             Th = kin.fk_hand(q)
             xd, _ = task_velocity(Th[:3, 3], Th[:3, :3], p_d, R_d, v_ff, w_ff, cfg)
