@@ -1,15 +1,17 @@
 <div align="center">
 
-<p><img src="./assets/readme/hero.svg" width="100%" alt="panda-dls：基于 MuJoCo 与阻尼最小二乘的 Panda 机械臂笛卡尔空间轨迹跟踪与姿态控制"></p>
+# panda-dls
 
-![demo](results/demo.gif)
+**基于 MuJoCo 与阻尼最小二乘（DLS）的 7 自由度机械臂笛卡尔空间轨迹跟踪与姿态控制**
 
-*动力学层闭环跟踪实录（1 kHz）*
+*Python 手写 MDH 运动学 · DLS 分辨率速度控制 · 自适应阻尼 · 零空间冗余优化 · MuJoCo 物理仿真闭环*
 
 ![Python](https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white)
 ![MuJoCo](https://img.shields.io/badge/MuJoCo-3.11-orange)
-![核心依赖](https://img.shields.io/badge/数学实现-纯%20NumPy-informational)
+![核心依赖](https://img.shields.io/badge/数学运算-%20NumPy-informational)
 ![Tests](https://img.shields.io/badge/pytest-6%2F6%20passed-brightgreen)
+
+![demo](results/demo.gif)
 
 </div>
 
@@ -62,10 +64,6 @@ python scripts/run_experiments.py   # 四组对比实验 + 自动出图
 
 ## 原理
 
-<p align="center">
-  <img src="./assets/readme/pipeline.svg" width="100%" alt="控制回路数据流：轨迹发生器 → MDH 运动学 → 6D 误差 → DLS 控制律 → MuJoCo 闭环，q 实测 1 kHz 反馈">
-</p>
-
 参考轨迹给出期望位姿与前馈速度，手写 MDH 运动学算出当前位姿与雅可比，DLS 把 6D 误差映射为关节速度，MuJoCo 负责积分与渲染。
 
 $$\Delta q  =  \underbrace{J^T(JJ^T+\lambda^2 I_6)^{-1}(K e+\dot{x}_d)}_{\text{主任务：DLS 分辨率速度控制}}  +  \underbrace{(I_7-J^T(JJ^T+\lambda^2 I_6)^{-1}J) k_n z(q)}_{\text{零空间次任务}}$$
@@ -86,10 +84,10 @@ demo/
 │   ├── control.py        # 运动学层 / 动力学层仿真闭环（1 kHz）
 │   └── viz.py            # 指标曲线 / 实验图 / GIF + MP4 渲染
 ├── models/               # Franka Panda 模型（来自 mujoco_menagerie）
-├── assets/               # README 视觉素材（hero / 数据流图）
 ├── scripts/              # run_verify / run_ik_test / run_track / run_experiments
 ├── tests/                # pytest：对准测试、四元数性质、DLS 收敛
-└── results/              # 实验图表、demo.gif / demo.mp4、npz 日志
+├── results/              # 实验图表、demo.gif / demo.mp4、npz 日志
+└── docs/                 # 讲解文档
 ```
 
 ## 实验
