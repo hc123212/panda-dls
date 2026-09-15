@@ -40,21 +40,24 @@ def plot_tracking(log: dict, path: str, title: str = "笛卡尔空间轨迹跟�
 
 
 def plot_joints(log: dict, path: str, title: str = "关节轨迹与限位"):
-    """7 个关节角轨迹（实线=实际/虚线=期望）+ 限位带。"""
+    """7 个关节角轨迹 + 限位带。有 q_des 时叠加虚线（速度级），力矩层日志无此项。"""
     from . import kinematics as kin
+    has_des = "q_des" in log
     fig, ax = plt.subplots(figsize=(9, 5))
     t = log["t"]
     lim = kin.JOINT_LIMITS
     for j in range(7):
         ax.fill_between([t[0], t[-1]], lim[j, 0], lim[j, 1], color="0.9", zorder=0)
         ax.plot(t, log["q"][:, j], lw=1.1, label=f"q{j + 1}")
-        ax.plot(t, log["q_des"][:, j], lw=0.7, ls="--", color=f"C{j}", alpha=0.6)
+        if has_des:
+            ax.plot(t, log["q_des"][:, j], lw=0.7, ls="--", color=f"C{j}", alpha=0.6)
     for j in range(7):
         for b in lim[j]:
             ax.hlines(b, t[0], t[-1], color="r", lw=0.5, alpha=0.5)
     ax.set_xlabel("t [s]")
     ax.set_ylabel("关节角 [rad]")
-    ax.set_title(title + "\n（灰带=限位区间, 红线=限位边界, 实线=实际, 虚线=期望）")
+    suffix = "实线=实际, 虚线=期望" if has_des else "实线=实际 (力矩层无期望位置指令)"
+    ax.set_title(title + f"\n（灰带=限位区间, 红线=限位边界, {suffix}）")
     ax.legend(ncol=7, fontsize=8, loc="lower left")
     ax.grid(alpha=0.3)
     fig.tight_layout()

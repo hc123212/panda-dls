@@ -61,8 +61,10 @@ cd demo
 python scripts/run_verify.py        # 自检：FK / 雅可比 / 四元数 vs MuJoCo（改代码后必跑）
 python scripts/run_ik_test.py       # 静态 IK 收敛率统计
 python -m pytest tests/ -q          # 单元测试（12 项）
-python scripts/run_track.py         # 主 demo：动力学层闭环跟踪 + 图表 + GIF/MP4
-python scripts/run_track.py --view  # 实时 viewer 查看
+python scripts/run_track.py         # 主 demo：力矩级 OSC 闭环跟踪 + 图表 + GIF/MP4
+python scripts/run_track.py --servo # 位置舵机基线（对照）
+python scripts/run_track.py --kin   # 运动学层
+python scripts/run_track.py --view  # 实时 viewer（默认 OSC，--servo/--kin 同步切换）
 python scripts/run_experiments.py   # 四组对比实验 + 自动出图
 python scripts/run_osc.py           # 执行层级三方对比: 运动学层 / 位置舵机 / 操作空间控制
 python scripts/run_qp.py            # QP 硬约束: 贴限位救援 + 末端安全平面
