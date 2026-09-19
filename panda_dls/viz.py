@@ -142,8 +142,16 @@ def plot_joint_posture(logs: dict, path: str, joints=(5, 7), title: str = "同�
 
 
 def render_video(model_path: str, q_seq: np.ndarray, path: str, fps: int = 10,
-                 width: int = 960, height: int = 600):
-    """渲染关节序列 -> GIF 或 MP4 (按扩展名自动选择, 流式写入控制内存)。"""
+                 width: int = 960, height: int = 600,
+                 ref_points: np.ndarray | None = None,
+                 actual_points: np.ndarray | None = None):
+    """渲染关节序列 -> GIF 或 MP4 (按扩展名自动选择, 流式写入控制内存)。
+
+    ref_points / actual_points: 末端期望与实际轨迹点 (N,3), 传入则在场景中
+    叠加绘制（蓝=期望, 橙=实际, 后者随帧数增长, 与 q_seq 逐帧对齐）。
+    """
+    from .trail import ACTUAL_RGBA, REF_RADIUS, REF_RGBA, ACTUAL_RADIUS, add_trail, decimate
+
     model = mujoco.MjModel.from_xml_path(model_path)
     model.vis.global_.offwidth = width        # 默认离屏缓冲 640x480, 大分辨率需先扩
     model.vis.global_.offheight = height
@@ -155,6 +163,20 @@ def render_video(model_path: str, q_seq: np.ndarray, path: str, fps: int = 10,
     cam.elevation = -18.0
     cam.azimuth = 140.0
 
+    ref_all = actual_all = None
+    n_ref = n_act = 0
+    if ref_points is not None or actual_points is not None:
+        data.qpos[:7] = q_seq[0] if len(q_seq) else 0.0
+        data.qpos[7:] = 0.04
+        mujoco.mj_forward(model, data)
+        renderer.update_scene(data, camera=cam)   # 探测一次模型 geom 数以分配容量
+        budget = renderer.scene.maxgeom - renderer.scene.ngeom
+        n_ref = min(0 if ref_points is None else len(ref_points), int(budget * 0.45))
+        n_act = min(0 if actual_points is None else len(actual_points), max(0, budget - n_ref))
+        ref_all = decimate(ref_points, n_ref) if n_ref else None
+        act_len = min(len(actual_points), n_act) if actual_points is not None else 0
+        actual_all = np.asarray(actual_points, float)[:act_len] if act_len else None
+
     n = 0
     if path.endswith(".mp4"):
         writer = imageio.get_writer(path, fps=fps, codec="libx264", quality=6,
@@ -162,11 +184,16 @@ def render_video(model_path: str, q_seq: np.ndarray, path: str, fps: int = 10,
     else:
         writer = imageio.get_writer(path, mode="I", fps=fps, loop=0)
     with writer as w:
-        for q in q_seq:
+        for i, q in enumerate(q_seq):
             data.qpos[:7] = q
             data.qpos[7:] = 0.04
             mujoco.mj_forward(model, data)
             renderer.update_scene(data, camera=cam)
+            if ref_all is not None:
+                add_trail(renderer.scene, ref_all, REF_RGBA, REF_RADIUS)
+            if actual_all is not None:
+                add_trail(renderer.scene,
+                          decimate(actual_all[: i + 1], n_act), ACTUAL_RGBA, ACTUAL_RADIUS)
             w.append_data(renderer.render())
             n += 1
     renderer.close()

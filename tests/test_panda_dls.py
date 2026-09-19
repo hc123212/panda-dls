@@ -90,3 +90,34 @@ def test_dls_static_convergence():
         q, it = dls.solve_ik(Th[:3, 3], Th[:3, :3], q0, cfg)
         ok += it > 0
     assert ok / n >= 0.95
+
+
+def test_trail_overlay_and_decimate(mj):
+    from panda_dls import trail
+
+    model, _ = mj
+    pts = np.linspace([0.0, 0.0, 0.5], [0.2, 0.0, 0.5], 30)
+
+    # 等间隔抽稀: 首尾保留, 数量正确
+    d = trail.decimate(pts, 7)
+    assert len(d) == 7 and np.allclose(d[0], pts[0]) and np.allclose(d[-1], pts[-1])
+    assert np.array_equal(trail.decimate(pts, 100), pts)
+
+    # 场景追加与容量截断
+    scn = mujoco.MjvScene(model=model, maxgeom=1000)
+    scn.ngeom = 3
+    assert trail.add_trail(scn, pts, trail.REF_RGBA, 0.0035) == 30
+    assert trail.add_trail(scn, pts, trail.ACTUAL_RGBA, 0.005) == 30
+    assert scn.ngeom == 63
+    assert trail.add_trail(scn, np.zeros((5000, 3)), trail.REF_RGBA, 0.004) == 1000 - 63
+    assert scn.ngeom == scn.maxgeom
+
+    # user_scn 重绘: 每次清零重建
+    uscn = mujoco.MjvScene(model=model, maxgeom=1000)
+    counts = trail.draw_user_trails(uscn, ref_points=pts, actual_points=pts)
+    assert counts == {"ref": 30, "actual": 30} and uscn.ngeom == 60
+    counts = trail.draw_user_trails(uscn, ref_points=pts, actual_points=None)
+    assert counts == {"ref": 30, "actual": 0} and uscn.ngeom == 30
+
+    # 空输入不写入
+    assert trail.add_trail(scn, np.zeros((0, 3)), trail.REF_RGBA, 0.004) == 0

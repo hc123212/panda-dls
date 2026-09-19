@@ -10,7 +10,7 @@
 ![MuJoCo](https://img.shields.io/badge/MuJoCo-3.11-orange)
 ![核心依赖](https://img.shields.io/badge/数学运算-%20NumPy-informational)
 ![QP求解器](https://img.shields.io/badge/约束求解-OSQP-informational)
-![Tests](https://img.shields.io/badge/pytest-12%2F12%20passed-brightgreen)
+![Tests](https://img.shields.io/badge/pytest-13%2F13%20passed-brightgreen)
 
 ![demo](results/demo.gif)
 
@@ -26,6 +26,7 @@
 - 冗余利用：零空间投影挂载可操作度最大化与关节限位中值吸引两个次任务，主任务误差不受影响；
 - 力矩级操作空间控制（Khatib）：任务空间惯量 $\Lambda=(JM^{-1}J^T+\lambda^2I)^{-1}$、重力/科氏前馈、动力学一致零空间，$M$ 与偏置力直接取自 MuJoCo 递推，$\dot J\dot q$ 用方向差分估计，闭环精度反超速度级运动学层一个量级；
 - QP 硬约束控制器：关节限位/速度/加速度与末端安全平面统一进 OSQP 求解（warm start 单步 $\sim$0.1 ms），限位不再靠事后裁剪——解沿可行域边界滑动，硬保证不越界；
+- 场景内末端轨迹叠加：viewer 与 GIF/MP4 中同时绘制期望轨迹（蓝）与实测末端轨迹（橙），`trail.py` 向 `MjvScene` 用户 geom 通道写入小球，不改模型 XML；
 - 结论可复现：阻尼策略、零空间、前馈、控制层级、执行层级、约束求解六组对照实验，一键出全部图表。
 
 ## 结果
@@ -60,7 +61,7 @@ pip install mujoco numpy matplotlib imageio imageio-ffmpeg scipy osqp pytest
 cd demo
 python scripts/run_verify.py        # 自检：FK / 雅可比 / 四元数 vs MuJoCo（改代码后必跑）
 python scripts/run_ik_test.py       # 静态 IK 收敛率统计
-python -m pytest tests/ -q          # 单元测试（12 项）
+python -m pytest tests/ -q          # 单元测试（13 项）
 python scripts/run_track.py         # 主 demo：力矩级 OSC 闭环跟踪 + 图表 + GIF/MP4
 python scripts/run_track.py --servo # 位置舵机基线（对照）
 python scripts/run_track.py --kin   # 运动学层
@@ -93,6 +94,7 @@ demo/
 │   ├── traj.py           # 五次多项式时间律 / 空间圆 / 直线轨迹（含加速度前馈）
 │   ├── osc.py            # 操作空间控制: 任务空间惯量 / 动力学前馈 / 力矩级闭环
 │   ├── qp.py             # QP 约束控制器: OSQP 求解限位/限速/安全平面
+│   ├── trail.py          # 场景内末端轨迹叠加: viewer / GIF / MP4
 │   ├── control.py        # MuJoCo 仿真闭环 (运动学层 / 动力学层)
 │   └── viz.py            # 指标曲线 / 实验图 / GIF + MP4 渲染
 ├── models/               # Franka Panda 模型（来自 mujoco_menagerie, panda_motor.xml 为力矩执行器变体）

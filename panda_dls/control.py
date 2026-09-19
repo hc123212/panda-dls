@@ -134,13 +134,21 @@ def run_tracking(traj, cfg: DLSConfig | QPConfig, mode: str = "dynamic", q0: np.
 
 
 def run_with_viewer(traj, cfg: DLSConfig, q0: np.ndarray = DEMO_Q0, model_path: str = MODEL_PATH):
-    """实时 viewer 里的闭环跟踪（不落盘）。"""
+    """实时 viewer 里的闭环跟踪（不落盘）。
+
+    场景内叠加两条末端轨迹: 期望轨迹（蓝）与实测末端轨迹（橙, 随运行增长）。
+    """
     import mujoco.viewer
+
+    from .trail import draw_user_trails
 
     sim = PandaSim(model_path)
     q = np.clip(np.asarray(q0, float), Q_LO, Q_HI)
     q_des = q.copy()
     sim.set_q(q)
+
+    ref_pts = np.stack([traj.sample(traj.duration * i / 240)[0] for i in range(241)])
+    trail_pts = []
 
     with mujoco.viewer.launch_passive(sim.model, sim.data) as v:
         for k in range(int(np.ceil(traj.duration / 0.001))):
@@ -148,6 +156,8 @@ def run_with_viewer(traj, cfg: DLSConfig, q0: np.ndarray = DEMO_Q0, model_path: 
             p_d, R_d, v_ff, w_ff, *_ = traj.sample(t)
             q = sim.data.qpos[:7].copy()
             Th = kin.fk_hand(q)
+            if k % 8 == 0:
+                trail_pts.append(Th[:3, 3].copy())
             xd, _ = task_velocity(Th[:3, 3], Th[:3, :3], p_d, R_d, v_ff, w_ff, cfg)
             dq, _ = dls_step(q, xd, kin.hand_jacobian(q), cfg)
             q_des = np.clip(q_des + dq * 0.001, Q_LO, Q_HI)
@@ -155,5 +165,6 @@ def run_with_viewer(traj, cfg: DLSConfig, q0: np.ndarray = DEMO_Q0, model_path: 
             sim.data.ctrl[7] = 255.0
             mujoco.mj_step(sim.model, sim.data)
             if k % 10 == 0:
+                draw_user_trails(v.user_scn, ref_pts, trail_pts)
                 v.sync()
     print("viewer 运行结束")

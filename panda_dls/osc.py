@@ -190,8 +190,13 @@ def run_osc_tracking(traj, cfg: OSCConfig, q0: np.ndarray = DEMO_Q0,
 
 def run_osc_viewer(traj, cfg: OSCConfig, q0: np.ndarray = DEMO_Q0,
                    model_path: str = SCENE_MOTOR_PATH):
-    """实时 viewer 里的力矩级闭环跟踪（不落盘），控制律与 run_osc_tracking 完全一致。"""
+    """实时 viewer 里的力矩级闭环跟踪（不落盘），控制律与 run_osc_tracking 完全一致。
+
+    场景内叠加两条末端轨迹: 期望轨迹（蓝）与实测轨迹（橙, 随运行增长）。
+    """
     import mujoco.viewer
+
+    from .trail import draw_user_trails
 
     sim = PandaSim(model_path)
     model, data = sim.model, sim.data
@@ -199,15 +204,20 @@ def run_osc_viewer(traj, cfg: OSCConfig, q0: np.ndarray = DEMO_Q0,
     sim.set_q(q)
 
     pre = _osc_precompute(model, cfg)
+    ref_pts = np.stack([traj.sample(traj.duration * i / 240)[0] for i in range(241)])
+    trail_pts = []
 
     with mujoco.viewer.launch_passive(sim.model, sim.data) as v:
         for k in range(int(np.ceil(traj.duration / 0.001))):
             t = k * 0.001
             p_d, R_d, v_ff, w_ff, a_ff, alpha_ff = traj.sample(t)
-            tau, _ = _osc_tau(model, data, cfg, pre, p_d, R_d, v_ff, w_ff, a_ff, alpha_ff)
+            tau, info = _osc_tau(model, data, cfg, pre, p_d, R_d, v_ff, w_ff, a_ff, alpha_ff)
+            if k % 8 == 0:
+                trail_pts.append(info["p"].copy())
             data.ctrl[:7] = tau
             data.ctrl[7] = 255.0
             mujoco.mj_step(model, data)
             if k % 10 == 0:
+                draw_user_trails(v.user_scn, ref_pts, trail_pts)
                 v.sync()
     print("viewer 运行结束")

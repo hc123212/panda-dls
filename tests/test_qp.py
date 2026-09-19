@@ -37,7 +37,7 @@ def test_qp_unconstrained_matches_closed_form():
     """无约束 (限位远、速度上限放大、无加速度/平面) 时应退化为加权最小二乘闭式解。
 
     rho 取 1e-2 保持 QP 良态: rho→0 时 P 在 J 零空间方向曲率趋 0,
-    ADMM 尾部收敛慢, 对拍的是建模正确性而非病态问题的求解精度。
+    ADMM 尾部收敛慢, 比的是建模正确性而非病态问题的求解精度。
     """
     rng = np.random.default_rng(0)
     cfg = QPConfig(rho=1e-2, w_ori=0.5)
