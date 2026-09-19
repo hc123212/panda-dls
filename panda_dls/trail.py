@@ -14,13 +14,47 @@ from __future__ import annotations
 import mujoco
 import numpy as np
 
-#: 期望轨迹: 半透明蓝
-REF_RGBA = np.array([0.35, 0.65, 1.0, 0.55], dtype=np.float32)
-#: 实际轨迹: 橙
-ACTUAL_RGBA = np.array([1.0, 0.62, 0.35, 0.85], dtype=np.float32)
+#: 期望轨迹: 半透明蓝 (走 translucent 通道)
+REF_RGBA = np.array([0.35, 0.65, 1.0, 0.45], dtype=np.float32)
+#: 实际轨迹: 金黄实心 (alpha 1 走 opaque 通道, 先于半透明渲染)
+ACTUAL_RGBA = np.array([1.0, 0.72, 0.15, 1.0], dtype=np.float32)
 
-REF_RADIUS = 0.006    # 期望轨迹小球半径 [m], 比实际轨迹大一号: 跟踪贴合时露出蓝色外环
-ACTUAL_RADIUS = 0.004  # 实际轨迹小球半径 [m]
+REF_RADIUS = 0.0065     # 期望轨迹小球半径 [m]
+ACTUAL_RADIUS = 0.0045  # 实际轨迹小球半径 [m]
+
+#: 期望轨迹整体抬升 [m] (世界系)。同心半透明壳不可行: 蓝球前后两层半透明面
+#: 都会叠在黄球上, 两层 0.28 的 alpha 把实心层洗成背景色 (实测像素为证)。
+#: 抬升 3.5 cm 后两条轨迹平行分离, 从相机俯视角下清晰可辨。
+REF_LIFT = np.array([0.0, 0.0, 0.035])
+
+#: hand 原点 -> 指尖 (hand 系 z 轴)。手指滑移关节固定张开 0.04,
+#: 指尖距 hand 原点约 0.098 m, 取 0.15 m 让轨迹挂在手指前方, 避免圆环穿进夹爪
+TIP_OFFSET = np.array([0.0, 0.0, 0.15])
+
+
+def tip_from_pose(p, R) -> np.ndarray:
+    """hand 原点 + 姿态 -> 指尖世界坐标。"""
+    return np.asarray(p, float) + np.asarray(R, float) @ TIP_OFFSET
+
+
+def ref_tip(p, R) -> np.ndarray:
+    """期望轨迹绘制点: 指尖再抬升 REF_LIFT, 与实测轨迹平行。"""
+    return tip_from_pose(p, R) + REF_LIFT
+
+
+def tips_from_joints(q_arr) -> np.ndarray:
+    """从关节角序列重放 FK, 返回指尖轨迹 (N,3)。
+
+    用于离屏渲染: 日志里只存了 hand 原点位置, 姿态从 q 重放更省日志体积。
+    """
+    from . import kinematics as kin
+
+    q_arr = np.asarray(q_arr, float).reshape(-1, 7)
+    out = np.zeros((len(q_arr), 3))
+    for i, q in enumerate(q_arr):
+        Th = kin.fk_hand(q)
+        out[i] = Th[:3, 3] + Th[:3, :3] @ TIP_OFFSET
+    return out
 
 
 def decimate(points, n_max: int) -> np.ndarray:

@@ -140,14 +140,15 @@ def run_with_viewer(traj, cfg: DLSConfig, q0: np.ndarray = DEMO_Q0, model_path: 
     """
     import mujoco.viewer
 
-    from .trail import draw_user_trails
+    from .trail import draw_user_trails, ref_tip
 
     sim = PandaSim(model_path)
     q = np.clip(np.asarray(q0, float), Q_LO, Q_HI)
     q_des = q.copy()
     sim.set_q(q)
 
-    ref_pts = np.stack([traj.sample(traj.duration * i / 240)[0] for i in range(241)])
+    ref_pts = np.stack([ref_tip(*traj.sample(traj.duration * i / 240)[:2])
+                        for i in range(241)])
     trail_pts = []
 
     with mujoco.viewer.launch_passive(sim.model, sim.data) as v:
@@ -157,7 +158,7 @@ def run_with_viewer(traj, cfg: DLSConfig, q0: np.ndarray = DEMO_Q0, model_path: 
             q = sim.data.qpos[:7].copy()
             Th = kin.fk_hand(q)
             if k % 8 == 0:
-                trail_pts.append(Th[:3, 3].copy())
+                trail_pts.append(tip_from_pose(Th[:3, 3], Th[:3, :3]))
             xd, _ = task_velocity(Th[:3, 3], Th[:3, :3], p_d, R_d, v_ff, w_ff, cfg)
             dq, _ = dls_step(q, xd, kin.hand_jacobian(q), cfg)
             q_des = np.clip(q_des + dq * 0.001, Q_LO, Q_HI)

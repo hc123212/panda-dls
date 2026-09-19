@@ -96,19 +96,22 @@ def main():
     if args.gif and mode != "kin":
         # GIF 只取第一圈(README 门面, 控制体积), 全程高清由 MP4 承担
         # GIF 10 Hz / 10 fps, MP4 20 Hz / 20 fps, 回放速度均与真实时间一致
-        # 场景内叠加末端轨迹: 蓝=期望(整条), 橙=实测(随帧增长)
+        # 场景内叠加末端轨迹(绘制于指尖, 避免圆环穿进夹爪): 蓝=期望(半透明), 黄=实测(随帧增长)
+        from panda_dls.trail import ref_tip, tips_from_joints
+
         gif_stride = int(0.1 / 0.001)
         mp4_stride = int(0.05 / 0.001)
-        q_mp4 = log["q"][::mp4_stride]
-        p_mp4 = log["p"][::mp4_stride]
-        ref_pts = np.stack([traj.sample(traj.duration * i / 240)[0] for i in range(241)])
+        ref_pts = np.stack([ref_tip(*traj.sample(traj.duration * i / 240)[:2])
+                            for i in range(241)])
         n_lap = int((args.dur / max(args.laps, 1e-9)) / 0.1) + 1
         viz.render_video(MODEL_PATH, log["q"][::gif_stride][:n_lap],
                          os.path.join(RESULTS, "demo.gif"), fps=10, width=640, height=400,
-                         ref_points=ref_pts, actual_points=log["p"][::gif_stride][:n_lap])
-        viz.render_video(MODEL_PATH, q_mp4, os.path.join(RESULTS, "demo.mp4"),
+                         ref_points=ref_pts,
+                         actual_points=tips_from_joints(log["q"][::gif_stride][:n_lap]))
+        viz.render_video(MODEL_PATH, log["q"][::mp4_stride], os.path.join(RESULTS, "demo.mp4"),
                          fps=20, width=1280, height=800,
-                         ref_points=ref_pts, actual_points=p_mp4)
+                         ref_points=ref_pts,
+                         actual_points=tips_from_joints(log["q"][::mp4_stride]))
         print("媒体: results/demo.gif (首圈) / demo.mp4 (全程)")
 
 
