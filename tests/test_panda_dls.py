@@ -112,12 +112,14 @@ def test_trail_overlay_and_decimate(mj):
     assert trail.add_trail(scn, np.zeros((5000, 3)), trail.REF_RGBA, 0.004) == 1000 - 63
     assert scn.ngeom == scn.maxgeom
 
-    # user_scn 重绘: 每次清零重建
+    # user_scn 重绘: 每次清零重建; 期望轨迹先虚线化 (30 点 -> 每 3 取 1 + 末点 = 11)
     uscn = mujoco.MjvScene(model=model, maxgeom=1000)
     counts = trail.draw_user_trails(uscn, ref_points=pts, actual_points=pts)
-    assert counts == {"ref": 30, "actual": 30} and uscn.ngeom == 60
+    assert counts == {"ref": 11, "actual": 30} and uscn.ngeom == 41
     counts = trail.draw_user_trails(uscn, ref_points=pts, actual_points=None)
-    assert counts == {"ref": 30, "actual": 0} and uscn.ngeom == 30
+    assert counts == {"ref": 11, "actual": 0} and uscn.ngeom == 11
 
-    # 空输入不写入
+    # 虚线化: 首尾保留, 数量正确, 空输入不写入
+    d = trail.dash_ref(pts)
+    assert len(d) == 11 and np.allclose(d[0], pts[0]) and np.allclose(d[-1], pts[-1])
     assert trail.add_trail(scn, np.zeros((0, 3)), trail.REF_RGBA, 0.004) == 0

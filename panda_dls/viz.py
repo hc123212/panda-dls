@@ -151,7 +151,7 @@ def render_video(model_path: str, q_seq: np.ndarray, path: str, fps: int = 10,
     叠加绘制（蓝=期望, 橙=实际, 后者随帧数增长, 与 q_seq 逐帧对齐）。
     """
     from .trail import (ACTUAL_RGBA, REF_RADIUS, REF_RGBA, ACTUAL_RADIUS,
-                        REF_EMISSION, ACTUAL_EMISSION, add_trail, decimate)
+                        REF_EMISSION, ACTUAL_EMISSION, add_trail, dash_ref, decimate)
 
     model = mujoco.MjModel.from_xml_path(model_path)
     model.vis.global_.offwidth = width        # 默认离屏缓冲 640x480, 大分辨率需先扩
@@ -174,7 +174,7 @@ def render_video(model_path: str, q_seq: np.ndarray, path: str, fps: int = 10,
         budget = renderer.scene.maxgeom - renderer.scene.ngeom
         n_ref = min(0 if ref_points is None else len(ref_points), int(budget * 0.45))
         n_act = min(0 if actual_points is None else len(actual_points), max(0, budget - n_ref))
-        ref_all = decimate(ref_points, n_ref) if n_ref else None
+        ref_all = dash_ref(decimate(ref_points, n_ref)) if n_ref else None
         act_len = min(len(actual_points), n_act) if actual_points is not None else 0
         actual_all = np.asarray(actual_points, float)[:act_len] if act_len else None
 

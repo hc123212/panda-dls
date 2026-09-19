@@ -14,13 +14,16 @@ from __future__ import annotations
 import mujoco
 import numpy as np
 
-#: 期望轨迹: 半透明蓝 (走 translucent 通道)
-REF_RGBA = np.array([0.35, 0.65, 1.0, 0.45], dtype=np.float32)
-#: 实际轨迹: 金黄实心 (alpha 1 走 opaque 通道, 先于半透明渲染)
+#: 期望轨迹: 浅蓝不透明虚线 (走 opaque 通道)。半透明方案会在与金环投影
+#: 重叠处混出灰青色 (0.45 alpha), 腕部摆动让重叠弧段随时间变化 -> GIF 里
+#: 金灰交替; 虚线化后重叠面积大减, 重叠处是干净的深度遮挡而非混色
+REF_RGBA = np.array([0.35, 0.65, 1.0, 1.0], dtype=np.float32)
+#: 实际轨迹: 金黄实心 (先于半透明渲染)
 ACTUAL_RGBA = np.array([1.0, 0.72, 0.15, 1.0], dtype=np.float32)
 
-REF_RADIUS = 0.0065     # 期望轨迹小球半径 [m]
+REF_RADIUS = 0.007      # 期望轨迹小球半径 [m]
 ACTUAL_RADIUS = 0.0045  # 实际轨迹小球半径 [m]
+REF_DASH = 3            # 期望轨迹虚线化: 每 REF_DASH 个点画 1 个
 
 #: 自发光系数: 实测轨迹设 1.0, 颜色不依赖光照——期望轨迹悬在实测正上方,
 #: 平行光(dir=0,0,-1)会把蓝环的影子正落在金环上, 不加自发光金色会被影子洗成灰色
@@ -45,6 +48,15 @@ def tip_from_pose(p, R) -> np.ndarray:
 def ref_tip(p, R) -> np.ndarray:
     """期望轨迹绘制点: 指尖再抬升 REF_LIFT, 与实测轨迹平行。"""
     return tip_from_pose(p, R) + REF_LIFT
+
+
+def dash_ref(points) -> np.ndarray:
+    """期望轨迹虚线化: 每 REF_DASH 个点画 1 个, 保留末点。"""
+    pts = np.asarray(points, float).reshape(-1, 3)
+    if len(pts) <= REF_DASH:
+        return pts
+    idx = np.unique(np.concatenate([np.arange(0, len(pts), REF_DASH), [len(pts) - 1]]))
+    return pts[idx]
 
 
 def tips_from_joints(q_arr) -> np.ndarray:
@@ -106,7 +118,8 @@ def draw_user_trails(user_scn, ref_points=None, actual_points=None) -> dict:
     """
     user_scn.ngeom = 0
     ref_cap = user_scn.maxgeom // 3
-    n_ref = add_trail(user_scn, decimate(ref_points, ref_cap), REF_RGBA, REF_RADIUS, REF_EMISSION)
+    n_ref = add_trail(user_scn, dash_ref(decimate(ref_points, ref_cap)),
+                      REF_RGBA, REF_RADIUS, REF_EMISSION)
     n_act = add_trail(user_scn, decimate(actual_points, user_scn.maxgeom - user_scn.ngeom),
                       ACTUAL_RGBA, ACTUAL_RADIUS, ACTUAL_EMISSION)
     return {"ref": n_ref, "actual": n_act}
@@ -120,7 +133,8 @@ def overlay_video_trails(scene, ref_points=None, actual_points=None) -> dict:
     """
     budget = max(0, scene.maxgeom - scene.ngeom)
     ref_cap = int(budget * 0.45)
-    n_ref = add_trail(scene, decimate(ref_points, ref_cap), REF_RGBA, REF_RADIUS, REF_EMISSION)
+    n_ref = add_trail(scene, dash_ref(decimate(ref_points, ref_cap)),
+                      REF_RGBA, REF_RADIUS, REF_EMISSION)
     n_act = add_trail(scene, decimate(actual_points, max(0, budget - n_ref)),
                       ACTUAL_RGBA, ACTUAL_RADIUS, ACTUAL_EMISSION)
     return {"ref": n_ref, "actual": n_act}
