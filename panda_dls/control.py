@@ -140,7 +140,7 @@ def run_with_viewer(traj, cfg: DLSConfig, q0: np.ndarray = DEMO_Q0, model_path: 
     """
     import mujoco.viewer
 
-    from .trail import draw_user_trails, ref_tip
+    from .trail import draw_user_trails, ref_tip, tip_from_pose
 
     sim = PandaSim(model_path)
     q = np.clip(np.asarray(q0, float), Q_LO, Q_HI)

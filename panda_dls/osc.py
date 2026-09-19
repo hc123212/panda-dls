@@ -196,7 +196,7 @@ def run_osc_viewer(traj, cfg: OSCConfig, q0: np.ndarray = DEMO_Q0,
     """
     import mujoco.viewer
 
-    from .trail import draw_user_trails, ref_tip
+    from .trail import draw_user_trails, ref_tip, tip_from_pose
 
     sim = PandaSim(model_path)
     model, data = sim.model, sim.data

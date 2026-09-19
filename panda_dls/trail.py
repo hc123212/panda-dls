@@ -22,6 +22,11 @@ ACTUAL_RGBA = np.array([1.0, 0.72, 0.15, 1.0], dtype=np.float32)
 REF_RADIUS = 0.0065     # 期望轨迹小球半径 [m]
 ACTUAL_RADIUS = 0.0045  # 实际轨迹小球半径 [m]
 
+#: 自发光系数: 实测轨迹设 1.0, 颜色不依赖光照——期望轨迹悬在实测正上方,
+#: 平行光(dir=0,0,-1)会把蓝环的影子正落在金环上, 不加自发光金色会被影子洗成灰色
+REF_EMISSION = 0.35
+ACTUAL_EMISSION = 1.0
+
 #: 期望轨迹整体抬升 [m] (世界系)。同心半透明壳不可行: 蓝球前后两层半透明面
 #: 都会叠在黄球上, 两层 0.28 的 alpha 把实心层洗成背景色 (实测像素为证)。
 #: 抬升 3.5 cm 后两条轨迹平行分离, 从相机俯视角下清晰可辨。
@@ -68,10 +73,11 @@ def decimate(points, n_max: int) -> np.ndarray:
     return pts[idx]
 
 
-def add_trail(scene, points, rgba, radius: float) -> int:
+def add_trail(scene, points, rgba, radius: float, emission: float = 0.0) -> int:
     """向场景 geom 缓冲区追加一串小球体, 返回实际写入条数。
 
     容量不足时静默截断（调用方负责抽稀, 这里只做最后防线）。
+    emission: 自发光系数, 1.0 = 纯 rgba 颜色不依赖光照（影子遮不住）。
     """
     pts = np.asarray(points, float).reshape(-1, 3)
     cap = scene.maxgeom - scene.ngeom
@@ -82,11 +88,12 @@ def add_trail(scene, points, rgba, radius: float) -> int:
     mat = np.eye(3).ravel()
     rgba = np.asarray(rgba, np.float32)
     for i in range(n):
+        g = scene.geoms[scene.ngeom + i]
         mujoco.mjv_initGeom(
-            scene.geoms[scene.ngeom + i],
-            mujoco.mjtGeom.mjGEOM_SPHERE,
+            g, mujoco.mjtGeom.mjGEOM_SPHERE,
             size, pts[i], mat, rgba,
         )
+        g.emission = emission
     scene.ngeom += n
     return n
 
@@ -99,9 +106,9 @@ def draw_user_trails(user_scn, ref_points=None, actual_points=None) -> dict:
     """
     user_scn.ngeom = 0
     ref_cap = user_scn.maxgeom // 3
-    n_ref = add_trail(user_scn, decimate(ref_points, ref_cap), REF_RGBA, REF_RADIUS)
+    n_ref = add_trail(user_scn, decimate(ref_points, ref_cap), REF_RGBA, REF_RADIUS, REF_EMISSION)
     n_act = add_trail(user_scn, decimate(actual_points, user_scn.maxgeom - user_scn.ngeom),
-                      ACTUAL_RGBA, ACTUAL_RADIUS)
+                      ACTUAL_RGBA, ACTUAL_RADIUS, ACTUAL_EMISSION)
     return {"ref": n_ref, "actual": n_act}
 
 
@@ -113,7 +120,7 @@ def overlay_video_trails(scene, ref_points=None, actual_points=None) -> dict:
     """
     budget = max(0, scene.maxgeom - scene.ngeom)
     ref_cap = int(budget * 0.45)
-    n_ref = add_trail(scene, decimate(ref_points, ref_cap), REF_RGBA, REF_RADIUS)
+    n_ref = add_trail(scene, decimate(ref_points, ref_cap), REF_RGBA, REF_RADIUS, REF_EMISSION)
     n_act = add_trail(scene, decimate(actual_points, max(0, budget - n_ref)),
-                      ACTUAL_RGBA, ACTUAL_RADIUS)
+                      ACTUAL_RGBA, ACTUAL_RADIUS, ACTUAL_EMISSION)
     return {"ref": n_ref, "actual": n_act}

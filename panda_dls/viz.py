@@ -150,7 +150,8 @@ def render_video(model_path: str, q_seq: np.ndarray, path: str, fps: int = 10,
     ref_points / actual_points: 末端期望与实际轨迹点 (N,3), 传入则在场景中
     叠加绘制（蓝=期望, 橙=实际, 后者随帧数增长, 与 q_seq 逐帧对齐）。
     """
-    from .trail import ACTUAL_RGBA, REF_RADIUS, REF_RGBA, ACTUAL_RADIUS, add_trail, decimate
+    from .trail import (ACTUAL_RGBA, REF_RADIUS, REF_RGBA, ACTUAL_RADIUS,
+                        REF_EMISSION, ACTUAL_EMISSION, add_trail, decimate)
 
     model = mujoco.MjModel.from_xml_path(model_path)
     model.vis.global_.offwidth = width        # 默认离屏缓冲 640x480, 大分辨率需先扩
@@ -190,10 +191,11 @@ def render_video(model_path: str, q_seq: np.ndarray, path: str, fps: int = 10,
             mujoco.mj_forward(model, data)
             renderer.update_scene(data, camera=cam)
             if ref_all is not None:
-                add_trail(renderer.scene, ref_all, REF_RGBA, REF_RADIUS)
+                add_trail(renderer.scene, ref_all, REF_RGBA, REF_RADIUS, REF_EMISSION)
             if actual_all is not None:
                 add_trail(renderer.scene,
-                          decimate(actual_all[: i + 1], n_act), ACTUAL_RGBA, ACTUAL_RADIUS)
+                          decimate(actual_all[: i + 1], n_act),
+                          ACTUAL_RGBA, ACTUAL_RADIUS, ACTUAL_EMISSION)
             w.append_data(renderer.render())
             n += 1
     renderer.close()
